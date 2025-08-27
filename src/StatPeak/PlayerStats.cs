@@ -2,7 +2,7 @@
 
 namespace StatPeak;
 
-internal class PlayerStats
+internal static class PlayerStats
 {
     private readonly static Dictionary<string, double> stats = new(2);
         

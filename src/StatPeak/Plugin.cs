@@ -85,6 +85,16 @@ public partial class Plugin : BaseUnityPlugin
         }
     }
 
+    public class InitializationPatch
+    {
+        [HarmonyPatch(typeof(GameHandler), nameof(GameHandler.Initialize))]
+        [HarmonyPostfix]
+        public static void InitializeSessionTicket()
+        {
+            SteamUtil.Init();
+        }
+    }
+
     public class RunPatch
     {
         [HarmonyPatch(typeof(RunManager), nameof(RunManager.StartRun))]
