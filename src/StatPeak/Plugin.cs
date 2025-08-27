@@ -104,6 +104,14 @@ public partial class Plugin : BaseUnityPlugin
             Plugin.Logger.LogDebug("Run started. Resetting all accumulated statistics...");
             PlayerStats.Reset();
         }
+
+        [HarmonyPatch(typeof(RunManager), nameof(RunManager.EndGame))]
+        [HarmonyPostfix]
+        public static void SendRunStatistics()
+        {
+            Plugin.Logger.LogDebug("Run ended. Sending all accumulated statistics to remote server...");
+            StatPeakServerUtil.SendStats(PlayerStats.GetAll());
+        }
     }
 
     public class AfflictionPatch
