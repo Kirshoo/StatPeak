@@ -37,4 +37,9 @@ internal class PlayerStats
     {
         stats.Clear();
     }
+
+    public static Dictionary<string, double> GetAll()
+    {
+        return stats;
+    }
 }

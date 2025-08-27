@@ -64,6 +64,25 @@ public partial class Plugin : BaseUnityPlugin
         );
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.F5))
+        {
+            showStats = !showStats;
+        }
+    }
+
+    private void OnGUI()
+    {
+        if (!showStats) return;
+
+        int i = 1;
+        foreach (var entry in PlayerStats.GetAll())
+        {
+            GUI.Label(new Rect(20, (i + 1) * 20, 300, 20), string.Format("{0}: {1}", entry.Key, entry.Value.ToString("F4", CultureInfo.InvariantCulture)));
+        }
+    }
+
     public class AfflictionPatch
     {
         private static CharacterAfflictions.STATUSTYPE lastAffliction = CharacterAfflictions.STATUSTYPE.Hunger;
