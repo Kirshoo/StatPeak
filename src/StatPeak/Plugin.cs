@@ -1,16 +1,28 @@
 ﻿using System;
+using System.Globalization;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using UnityEngine;
 
 namespace StatPeak;
+
+public enum Stat
+{
+    deaths,
+    faints,
+    revives,
+    jumps,
+    luggages,
+}
 
 [BepInAutoPlugin]
 public partial class Plugin : BaseUnityPlugin
 {
     internal new static ManualLogSource Logger;
     private readonly Harmony _harmony = new(Id);
+    private bool showStats = false;
 
     internal static ConfigEntry<string> RemoteServerBaseURL { get; private set; }
     internal static ConfigEntry<string> RemoteServerBasePath { get; private set; }
@@ -26,6 +38,9 @@ public partial class Plugin : BaseUnityPlugin
 
         _harmony.PatchAll(typeof(Plugin.PlayerStatePatch));
         Logger.LogInfo($"All player state patches applied successfully");
+
+        _harmony.PatchAll(typeof(Plugin.RunSpecificPatches));
+        Logger.LogInfo($"All run specific patches applied successfully");
 
         RemoteServerBaseURL = Config.Bind(
             "RemoteServer",
@@ -102,8 +117,8 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player died, incrementing corresponding stat");
-            PlayerStats.Increment("deaths");
+            Plugin.Logger.LogDebug($"Local player died, incrementing '{Stat.deaths}'");
+            PlayerStats.Increment(Stat.deaths.ToString());
         }
 
         [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Revive))]
@@ -116,8 +131,8 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player revived, incrementing corresponding stat");
-            PlayerStats.Increment("revives");
+            Plugin.Logger.LogDebug($"Local player revived, incrementing '{Stat.revives}'");
+            PlayerStats.Increment(Stat.revives.ToString());
         }
 
         [HarmonyPatch(typeof(Character), nameof(Character.RPCA_PassOut))]
@@ -130,8 +145,8 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player passed out, incrementing corresponding stat");
-            PlayerStats.Increment("faints");
+            Plugin.Logger.LogDebug($"Local player passed out, incrementing '{Stat.faints}'");
+            PlayerStats.Increment(Stat.faints.ToString());
         }
 
         [HarmonyPatch(typeof(Character), nameof(Character.OnJump))]
