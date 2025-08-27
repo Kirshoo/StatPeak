@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Debug GUI for currently accumulated statistics
 
+### Changed
+
+- Accumulated statistics will when run is started
+
 ## [0.2.0]
 
 ### Added

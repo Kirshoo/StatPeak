@@ -40,6 +40,7 @@ public partial class Plugin : BaseUnityPlugin
         Logger.LogInfo($"All player state patches applied successfully");
 
         _harmony.PatchAll(typeof(Plugin.RunSpecificPatches));
+        _harmony.PatchAll(typeof(Plugin.RunPatch));
         Logger.LogInfo($"All run specific patches applied successfully");
 
         RemoteServerBaseURL = Config.Bind(
@@ -81,6 +82,17 @@ public partial class Plugin : BaseUnityPlugin
         {
             GUI.Label(new Rect(20, 20 * i, 300, 20), string.Format("{0}: {1}", entry.Key, entry.Value.ToString("F4", CultureInfo.InvariantCulture)));
             i++;
+        }
+    }
+
+    public class RunPatch
+    {
+        [HarmonyPatch(typeof(RunManager), nameof(RunManager.StartRun))]
+        [HarmonyPostfix]
+        public static void ResetStatistics()
+        {
+            Plugin.Logger.LogDebug("Run started. Resetting all accumulated statistics...");
+            PlayerStats.Reset();
         }
     }
 
