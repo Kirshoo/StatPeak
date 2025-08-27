@@ -79,7 +79,8 @@ public partial class Plugin : BaseUnityPlugin
         int i = 1;
         foreach (var entry in PlayerStats.GetAll())
         {
-            GUI.Label(new Rect(20, (i + 1) * 20, 300, 20), string.Format("{0}: {1}", entry.Key, entry.Value.ToString("F4", CultureInfo.InvariantCulture)));
+            GUI.Label(new Rect(20, 20 * i, 300, 20), string.Format("{0}: {1}", entry.Key, entry.Value.ToString("F4", CultureInfo.InvariantCulture)));
+            i++;
         }
     }
 
