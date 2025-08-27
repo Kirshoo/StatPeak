@@ -24,6 +24,9 @@ public partial class Plugin : BaseUnityPlugin
         _harmony.PatchAll(typeof(Plugin.AfflictionPatch));
         Logger.LogInfo($"All affliction patches applied successfully.");
 
+        _harmony.PatchAll(typeof(Plugin.PlayerStatePatch));
+        Logger.LogInfo($"All player state patches applied successfully");
+
         RemoteServerBaseURL = Config.Bind(
             "RemoteServer",
             "BaseURL",
@@ -84,6 +87,65 @@ public partial class Plugin : BaseUnityPlugin
                 AccumulatedAmount = 0;
                 lastAffliction = statusType;
             }
+        }
+    }
+
+    public class PlayerStatePatch
+    {
+        [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Die))]
+        [HarmonyPostfix]
+        public static void IncrementDeaths(ref Character __instance)
+        {
+            if (!__instance.IsLocal)
+            {
+                // Ignore calls that are not about local player
+                return;
+            }
+
+            Plugin.Logger.LogDebug($"Local player died, incrementing corresponding stat");
+            PlayerStats.Increment("deaths");
+        }
+
+        [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Revive))]
+        [HarmonyPostfix]
+        public static void IncrementRevives(ref Character __instance)
+        {
+            if (!__instance.IsLocal)
+            {
+                // Ignore calls that are not about local player
+                return;
+            }
+
+            Plugin.Logger.LogDebug($"Local player revived, incrementing corresponding stat");
+            PlayerStats.Increment("revives");
+        }
+
+        [HarmonyPatch(typeof(Character), nameof(Character.RPCA_PassOut))]
+        [HarmonyPostfix]
+        public static void IncrementFaints(ref Character __instance)
+        {
+            if (!__instance.IsLocal)
+            {
+                // Ignore calls that are not about local player
+                return;
+            }
+
+            Plugin.Logger.LogDebug($"Local player passed out, incrementing corresponding stat");
+            PlayerStats.Increment("faints");
+        }
+
+        [HarmonyPatch(typeof(Character), nameof(Character.OnJump))]
+        [HarmonyPostfix]
+        public static void IncrementJumps(ref Character __instance)
+        {
+            if (!__instance.IsLocal)
+            {
+                // Ignore calls that are not about local player
+                return;
+            }
+
+            Plugin.Logger.LogDebug($"Local player jumped, incrementing corresponding stat");
+            PlayerStats.Increment("jumps");
         }
     }
 
