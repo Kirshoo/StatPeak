@@ -12,4 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Harmony patches to listen for affliction status changes
 - Harmony patches to count amount of faints, deaths, revives and jumps
 - Harmony patch for keeping track of the amount of luggages opened by local player
+
+## [0.1.0]
+
+### Added
+
 - Config entries to configure where stat packages will be sent to
