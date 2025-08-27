@@ -159,9 +159,25 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player jumped, incrementing corresponding stat");
-            PlayerStats.Increment("jumps");
+            Plugin.Logger.LogDebug($"Local player jumped, incrementing '{Stat.jumps}'");
+            PlayerStats.Increment(Stat.jumps.ToString());
         }
     }
 
+    public class RunSpecificPatches
+    {
+        [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerLuggageOpened))]
+        [HarmonyPostfix]
+        public static void IncrementOpenedLuggages(ref Character character)
+        {
+            if (!character.IsLocal)
+            {
+                // Ignore calls that are not about local player
+                return;
+            }
+
+            Plugin.Logger.LogDebug($"Local player opened luggage, incrementing {Stat.luggages}");
+            PlayerStats.Increment(Stat.luggages.ToString());
+        }
+    }
 }
