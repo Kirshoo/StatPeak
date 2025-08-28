@@ -10,16 +10,17 @@ using UnityEngine.SceneManagement;
 
 namespace StatPeak;
 
-public enum Stat
+
+public static class Stat
 {
-    deaths,
-    faints,
-    revives,
-    jumps,
-    luggages,
-    items_thrown,
-    items_grabbed,
-    items_cooked,
+    public readonly static string TotalDeaths = "Died this run";
+    public readonly static string TotalFaints = "Passed out this run";
+    public readonly static string TotalRevives = "Been revived this run";
+    public readonly static string TotalJumps = "Jumped this run";
+    public readonly static string LuggagesOpened = "Luggages opened by you";
+    public readonly static string ItemsThrown = "Items thrown by you";
+    public readonly static string ItemsGrabbed = "Items picked up by you";
+    public readonly static string ItemsCooked = "Items cooked by you";
 }
 
 [BepInAutoPlugin]
@@ -44,7 +45,7 @@ public partial class Plugin : BaseUnityPlugin
         _harmony.PatchAll(typeof(Plugin.PlayerStatePatch));
         Logger.LogInfo($"All player state patches applied successfully");
 
-        _harmony.PatchAll(typeof(Plugin.RunSpecificPatches));
+        _harmony.PatchAll(typeof(Plugin.PlayerActionPatch));
         _harmony.PatchAll(typeof(Plugin.RunPatch));
         Logger.LogInfo($"All run specific patches applied successfully");
 
@@ -175,7 +176,7 @@ public partial class Plugin : BaseUnityPlugin
 
             // Add before reseting to not lose information about last amount
             AccumulatedAmount += amount;
-            PlayerStats.Increment(statusType.ToString().ToLower(), amount);
+            PlayerStats.Increment(statusType.ToString(), amount);
 
             if (lastAffliction != statusType || DateTime.Now > lastLogTime.AddMinutes(1))
             {
@@ -183,7 +184,7 @@ public partial class Plugin : BaseUnityPlugin
                 // or when you are accumulating for more than 1 minute
                 //
                 // Otherwise, will flood console with lots of "Added X.XXXXXX of hunger"
-                Plugin.Logger.LogDebug($"Adding {AccumulatedAmount} of {lastAffliction.ToString().ToLower()}");
+                Plugin.Logger.LogDebug($"Adding {AccumulatedAmount} of {lastAffliction.ToString()}");
 
                 lastLogTime = DateTime.Now;
                 AccumulatedAmount = 0;
@@ -206,8 +207,8 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player died, incrementing '{Stat.deaths}'");
-            PlayerStats.Increment(Stat.deaths.ToString());
+            Plugin.Logger.LogDebug($"Local player died, incrementing 'deaths'");
+            PlayerStats.Increment(Stat.TotalDeaths);
         }
 
         [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Revive))]
@@ -220,8 +221,8 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player revived, incrementing '{Stat.revives}'");
-            PlayerStats.Increment(Stat.revives.ToString());
+            Plugin.Logger.LogDebug($"Local player revived, incrementing 'revives'");
+            PlayerStats.Increment(Stat.TotalRevives);
         }
 
         [HarmonyPatch(typeof(Character), nameof(Character.RPCA_PassOut))]
@@ -234,8 +235,8 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player passed out, incrementing '{Stat.faints}'");
-            PlayerStats.Increment(Stat.faints.ToString());
+            Plugin.Logger.LogDebug($"Local player passed out, incrementing 'faints'");
+            PlayerStats.Increment(Stat.TotalFaints);
         }
 
         [HarmonyPatch(typeof(Character), nameof(Character.OnJump))]
@@ -248,12 +249,12 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player jumped, incrementing '{Stat.jumps}'");
-            PlayerStats.Increment(Stat.jumps.ToString());
+            Plugin.Logger.LogDebug($"Local player jumped, incrementing 'jumps'");
+            PlayerStats.Increment(Stat.TotalJumps);
         }
     }
 
-    public class RunSpecificPatches
+    public class PlayerActionPatch
     {
         [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerLuggageOpened))]
         [HarmonyPostfix]
@@ -265,8 +266,8 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player opened luggage, incrementing {Stat.luggages}");
-            PlayerStats.Increment(Stat.luggages.ToString());
+            Plugin.Logger.LogDebug($"Local player opened luggage, incrementing 'luggages'");
+            PlayerStats.Increment(Stat.LuggagesOpened);
         }
 
         [HarmonyPatch(typeof(Item), nameof(Item.RPC_SetThrownData))]
@@ -294,8 +295,8 @@ public partial class Plugin : BaseUnityPlugin
 
             if (!throwCharacter.IsLocal) return;
 
-            Plugin.Logger.LogDebug($"Local player got rid of {__instance.GetItemName()}, incrementing '{Stat.items_thrown}'...");
-            PlayerStats.Increment(Stat.items_thrown.ToString());
+            Plugin.Logger.LogDebug($"Local player got rid of {__instance.GetItemName()}, incrementing 'items_thrown'...");
+            PlayerStats.Increment(Stat.ItemsThrown);
         }
 
         [HarmonyPatch(typeof(CharacterItems), nameof(CharacterItems.OnPickupAccepted))]
@@ -304,8 +305,8 @@ public partial class Plugin : BaseUnityPlugin
         {
             if (!__instance.character.IsLocal) return;
 
-            Plugin.Logger.LogDebug($"Local player picked up an item, incrementing '{Stat.items_grabbed}'...");
-            PlayerStats.Increment(Stat.items_grabbed.ToString());
+            Plugin.Logger.LogDebug($"Local player picked up an item, incrementing 'items_grabbed'...");
+            PlayerStats.Increment(Stat.ItemsGrabbed);
         }
 
         [HarmonyPatch(typeof(ItemCooking), nameof(ItemCooking.FinishCooking))]
@@ -314,8 +315,8 @@ public partial class Plugin : BaseUnityPlugin
         {
             if (!__instance.item.holderCharacter.IsLocal) return;
 
-            Plugin.Logger.LogDebug($"Local player cooked {__instance.item.GetItemName()}, incrementing '{Stat.items_cooked}'...");
-            PlayerStats.Increment(Stat.items_cooked.ToString());
+            Plugin.Logger.LogDebug($"Local player cooked {__instance.item.GetItemName()}, incrementing 'items_cooked'...");
+            PlayerStats.Increment(Stat.ItemsCooked);
         }
     }
 }
