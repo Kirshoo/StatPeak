@@ -4,6 +4,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using Photon.Pun;
 using UnityEngine;
 
 namespace StatPeak;
@@ -15,6 +16,9 @@ public enum Stat
     revives,
     jumps,
     luggages,
+    items_thrown,
+    items_grabbed,
+    items_cooked,
 }
 
 [BepInAutoPlugin]
@@ -243,6 +247,55 @@ public partial class Plugin : BaseUnityPlugin
 
             Plugin.Logger.LogDebug($"Local player opened luggage, incrementing {Stat.luggages}");
             PlayerStats.Increment(Stat.luggages.ToString());
+        }
+
+        [HarmonyPatch(typeof(Item), nameof(Item.RPC_SetThrownData))]
+        [HarmonyPostfix]
+        public static void IncrementItemsThrown(Item __instance, int characterID)
+        {
+            PhotonView photonView = PhotonNetwork.GetPhotonView(characterID);
+            Character throwCharacter;
+
+            if (photonView)
+            {
+                photonView.TryGetComponent<Character>(out throwCharacter);
+            }
+            else
+            {
+                Plugin.Logger.LogWarning($"Cannot find view by viewID {characterID}");
+                return;
+            }
+
+            if (throwCharacter == null)
+            {
+                Plugin.Logger.LogWarning($"Unable to get character component.");
+                return;
+            }
+
+            if (!throwCharacter.IsLocal) return;
+
+            Plugin.Logger.LogDebug($"Local player got rid of {__instance.GetItemName()}, incrementing '{Stat.items_thrown}'...");
+            PlayerStats.Increment(Stat.items_thrown.ToString());
+        }
+
+        [HarmonyPatch(typeof(CharacterItems), nameof(CharacterItems.OnPickupAccepted))]
+        [HarmonyPostfix]
+        public static void IncrementItemsPickedUp(CharacterItems __instance)
+        {
+            if (!__instance.character.IsLocal) return;
+
+            Plugin.Logger.LogDebug($"Local player picked up an item, incrementing '{Stat.items_grabbed}'...");
+            PlayerStats.Increment(Stat.items_grabbed.ToString());
+        }
+
+        [HarmonyPatch(typeof(ItemCooking), nameof(ItemCooking.FinishCooking))]
+        [HarmonyPostfix]
+        public static void IncrementItemsCooked(ItemCooking __instance)
+        {
+            if (!__instance.item.holderCharacter.IsLocal) return;
+
+            Plugin.Logger.LogDebug($"Local player cooked {__instance.item.GetItemName()}, incrementing '{Stat.items_cooked}'...");
+            PlayerStats.Increment(Stat.items_cooked.ToString());
         }
     }
 }
