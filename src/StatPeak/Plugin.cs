@@ -53,7 +53,7 @@ public partial class Plugin : BaseUnityPlugin
         RemoteServerBaseURL = Config.Bind(
             "RemoteServer",
             "BaseURL",
-            "api.hactix.dev",
+            "api.hacktix.dev",
             "Base URL string of the remote server to which POST requests with stats will be sent to."
         );
 
