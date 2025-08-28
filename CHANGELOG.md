@@ -9,13 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Harmony patches for reacting to items being thrown/released, grabbed and cooked
+
+## [0.3.0]
+
+### Added
+
 - Debug GUI for currently accumulated statistics
-- Add Steam Utility for user validation
-- Add Remote server utility for data storage
+- Steam Utility for user validation
+- Remote server utility for data storage
+- Accumulated statistics are now sent to remote server when run ends or local player disconnects
 
 ### Changed
 
-- Accumulated statistics will when run is started
+- Accumulated statistics will reset when run is started
 
 ## [0.2.0]
 
