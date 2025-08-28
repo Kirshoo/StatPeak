@@ -43,6 +43,9 @@ public partial class Plugin : BaseUnityPlugin
         _harmony.PatchAll(typeof(Plugin.RunPatch));
         Logger.LogInfo($"All run specific patches applied successfully");
 
+        _harmony.PatchAll(typeof(Plugin.InitializationPatch));
+        Logger.LogInfo($"All initialization patches applied successfully");
+
         RemoteServerBaseURL = Config.Bind(
             "RemoteServer",
             "BaseURL",
