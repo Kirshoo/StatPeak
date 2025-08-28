@@ -6,6 +6,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using Photon.Pun;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace StatPeak;
 
@@ -104,6 +105,8 @@ public partial class Plugin : BaseUnityPlugin
 
     public class RunPatch
     {
+        public readonly static string AIRPORT_SCENE = "Airport";
+
         [HarmonyPatch(typeof(RunManager), nameof(RunManager.StartRun))]
         [HarmonyPostfix]
         public static void ResetStatistics()
@@ -136,6 +139,13 @@ public partial class Plugin : BaseUnityPlugin
         {
             // Only local player should click this button.
             // If not, something far worse is happening
+
+            // Dont send stats when in airport
+            if (SceneManager.GetActiveScene().name == AIRPORT_SCENE)
+            {
+                Plugin.Logger.LogDebug("Player quit in airport, no data will be sent");
+                return;
+            }
 
             SendRunStatistics();
         }
