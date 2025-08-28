@@ -129,6 +129,16 @@ public partial class Plugin : BaseUnityPlugin
 
             SendRunStatistics();
         }
+
+        [HarmonyPatch(typeof(PauseMenuMainPage), nameof(PauseMenuMainPage.OnQuitClicked))]
+        [HarmonyPostfix]
+        public static void SendRunStatisticsOnQuit()
+        {
+            // Only local player should click this button.
+            // If not, something far worse is happening
+
+            SendRunStatistics();
+        }
     }
 
     public class AfflictionPatch

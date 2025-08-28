@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Harmony patches for reacting to items being thrown/released, grabbed and cooked
+- Harmony patch to send statistics when player "quits"
 
 ## [0.3.0]
 
