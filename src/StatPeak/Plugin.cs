@@ -115,6 +115,16 @@ public partial class Plugin : BaseUnityPlugin
             Plugin.Logger.LogDebug("Run ended. Sending all accumulated statistics to remote server...");
             StatPeakServerUtil.SendStats(PlayerStats.GetAll());
         }
+
+        [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerPlayerDisconnected))]
+        [HarmonyPostfix]
+        public static void SendRunStatisticsOnDisconnect(Photon.Realtime.Player player)
+        {
+            // Ignore disconnect events from other players
+            if (!player.IsLocal) return;
+
+            SendRunStatistics();
+        }
     }
 
     public class AfflictionPatch
@@ -161,7 +171,9 @@ public partial class Plugin : BaseUnityPlugin
     public class PlayerStatePatch
     {
         [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Die))]
-        [HarmonyPostfix]
+        // Has to be Prefix because it calls RunManager.Instance.EndGame, which sends all the stats to server
+        // and information about death is lost since it runs AFTER the data is sent.
+        [HarmonyPrefix]
         public static void IncrementDeaths(ref Character __instance)
         {
             if (!__instance.IsLocal)
