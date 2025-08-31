@@ -4,7 +4,6 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
-using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -160,7 +159,7 @@ public partial class Plugin : BaseUnityPlugin
 
         [HarmonyPatch(typeof(CharacterAfflictions), nameof(CharacterAfflictions.AddStatus))]
         [HarmonyPostfix]
-        public static void IncrementStatus(ref CharacterAfflictions __instance, ref bool __result, CharacterAfflictions.STATUSTYPE statusType, float amount)
+        public static void IncrementStatus(CharacterAfflictions __instance, bool __result, CharacterAfflictions.STATUSTYPE statusType, float amount)
         {
             if (!__result)
             {
@@ -184,7 +183,7 @@ public partial class Plugin : BaseUnityPlugin
                 // or when you are accumulating for more than 1 minute
                 //
                 // Otherwise, will flood console with lots of "Added X.XXXXXX of hunger"
-                Plugin.Logger.LogDebug($"Adding {AccumulatedAmount} of {lastAffliction.ToString()}");
+                Plugin.Logger.LogDebug($"Adding {AccumulatedAmount} of {lastAffliction}");
 
                 lastLogTime = DateTime.Now;
                 AccumulatedAmount = 0;
@@ -199,7 +198,7 @@ public partial class Plugin : BaseUnityPlugin
         // Has to be Prefix because it calls RunManager.Instance.EndGame, which sends all the stats to server
         // and information about death is lost since it runs AFTER the data is sent.
         [HarmonyPrefix]
-        public static void IncrementDeaths(ref Character __instance)
+        public static void IncrementDeaths(Character __instance)
         {
             if (!__instance.IsLocal)
             {
@@ -213,7 +212,7 @@ public partial class Plugin : BaseUnityPlugin
 
         [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Revive))]
         [HarmonyPostfix]
-        public static void IncrementRevives(ref Character __instance)
+        public static void IncrementRevives(Character __instance)
         {
             if (!__instance.IsLocal)
             {
@@ -227,7 +226,7 @@ public partial class Plugin : BaseUnityPlugin
 
         [HarmonyPatch(typeof(Character), nameof(Character.RPCA_PassOut))]
         [HarmonyPostfix]
-        public static void IncrementFaints(ref Character __instance)
+        public static void IncrementFaints(Character __instance)
         {
             if (!__instance.IsLocal)
             {
@@ -241,7 +240,7 @@ public partial class Plugin : BaseUnityPlugin
 
         [HarmonyPatch(typeof(Character), nameof(Character.OnJump))]
         [HarmonyPostfix]
-        public static void IncrementJumps(ref Character __instance)
+        public static void IncrementJumps(Character __instance)
         {
             if (!__instance.IsLocal)
             {
@@ -258,7 +257,7 @@ public partial class Plugin : BaseUnityPlugin
     {
         [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerLuggageOpened))]
         [HarmonyPostfix]
-        public static void IncrementOpenedLuggages(ref Character character)
+        public static void IncrementOpenedLuggages(Character character)
         {
             if (!character.IsLocal)
             {
@@ -274,22 +273,9 @@ public partial class Plugin : BaseUnityPlugin
         [HarmonyPostfix]
         public static void IncrementItemsThrown(Item __instance, int characterID)
         {
-            PhotonView photonView = PhotonNetwork.GetPhotonView(characterID);
-            Character throwCharacter;
-
-            if (photonView)
+            if (!Character.GetCharacterWithPhotonID(characterID, out Character throwCharacter))
             {
-                photonView.TryGetComponent<Character>(out throwCharacter);
-            }
-            else
-            {
-                Plugin.Logger.LogWarning($"Cannot find view by viewID {characterID}");
-                return;
-            }
-
-            if (throwCharacter == null)
-            {
-                Plugin.Logger.LogWarning($"Unable to get character component.");
+                Plugin.Logger.LogError($"Cannot find view by viewID {characterID}");
                 return;
             }
 
@@ -317,6 +303,18 @@ public partial class Plugin : BaseUnityPlugin
 
             Plugin.Logger.LogDebug($"Local player cooked {__instance.item.GetItemName()}, incrementing 'items_cooked'...");
             PlayerStats.Increment(Stat.ItemsCooked);
+        }
+
+        [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerItemConsumed))]
+        [HarmonyPostfix]
+        public static void IncrementEatenItem(Item item, Character character)
+        {
+            if (!character.IsLocal) return;
+
+            // Using GetName() should ensure that any staged of cooked item with the same type
+            // will increment this stat
+            Plugin.Logger.LogDebug($"Local player consumed {item.GetName()}, incrementing '{item.GetName()}'...");
+            PlayerStats.Increment(item.GetName());
         }
     }
 }

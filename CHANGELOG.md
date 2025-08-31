@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Tracking of eaten items (per item)
+- Tracking of movement based statistics (distance walked, climbed, fallen, etc.)
 
 ## [0.4.0]
 
