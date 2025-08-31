@@ -13,10 +13,10 @@ internal class StatPeakServerUtil
     {
         // { IncomingKey, OutgoingKey }
 
-        { "walked", "walked" },
-        { "climbed", "climbed" },
-        { "fallen", "fallen" },
-        { "slid", "slid" },
+        { Stat.DistanceWalked, "walked" },
+        { Stat.DistanceClimbed, "climbed" },
+        { Stat.DistanceWhileAirborne, "fallen" },
+        { Stat.DistanceClimbedOnVines, "slid" },
         { Stat.TotalJumps, "jumps" },
         { "Hunger", "hunger" },
         { "Poison", "poison" },

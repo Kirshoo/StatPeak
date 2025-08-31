@@ -28,8 +28,14 @@ internal static class PlayerStats
         stats[name] = value;
     }
 
+    // If there is data stored at key {name}, then will return that data, otherwise will return a default value of double
     public static double Get(string name)
     {
+        if (!stats.ContainsKey(name))
+        {
+            return default;
+        }
+
         return stats[name];
     }
 
