@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Tracking of current outfit of the character
+
+## [0.5.0]
+
+### Added
+
 - Tracking of eaten items (per item)
 - Tracking of movement based statistics (distance walked, climbed, fallen, etc.)
 
