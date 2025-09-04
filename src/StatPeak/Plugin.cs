@@ -115,20 +115,30 @@ public partial class Plugin : BaseUnityPlugin
     {
         public readonly static string AIRPORT_SCENE = "Airport";
 
+        private static void ResetStatistics()
+        {
+            Plugin.Logger.LogDebug("Resetting all accumulated statistics...");
+            PlayerStats.Reset();
+        }
+
+        private static void SendRunStatistics()
+        {
+            Plugin.Logger.LogDebug("Sending all accumulated statistics to remote server...");
+            StatPeakServerUtil.SendStats(PlayerStats.GetAll());
+        }
+
         [HarmonyPatch(typeof(RunManager), nameof(RunManager.StartRun))]
         [HarmonyPostfix]
-        public static void ResetStatistics()
+        public static void OnRunStart()
         {
-            Plugin.Logger.LogDebug("Run started. Resetting all accumulated statistics...");
-            PlayerStats.Reset();
+            ResetStatistics();
         }
 
         [HarmonyPatch(typeof(RunManager), nameof(RunManager.EndGame))]
         [HarmonyPostfix]
-        public static void SendRunStatistics()
+        public static void OnRunEnd()
         {
-            Plugin.Logger.LogDebug("Run ended. Sending all accumulated statistics to remote server...");
-            StatPeakServerUtil.SendStats(PlayerStats.GetAll());
+            SendRunStatistics();
         }
 
         [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerPlayerDisconnected))]
