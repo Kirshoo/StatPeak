@@ -45,20 +45,74 @@ internal class StatPeakServerUtil
             );
     }
 
-    internal class Stats_DTO
+    internal abstract class ServerPayloadBase
     {
         [JsonProperty("ticket")]
         public string Ticket { get; set; }
 
+        public abstract ServerPayloadBase GetTruncatedCopy(int TruncatedTicketLength = 16);
+    }
+
+    internal class Stats_DTO : ServerPayloadBase
+    {
         [JsonProperty("stats")]
         public Dictionary<string, double> Stats { get; set; }
 
-        public Stats_DTO GetTruncatedCopy(int TruncatedTicketLength = 16)
+        public override ServerPayloadBase GetTruncatedCopy(int TruncatedTicketLength = 16)
         {
             return new Stats_DTO()
             {
                 Ticket = Ticket.Substring(0, TruncatedTicketLength),
                 Stats = Stats,
+            };
+        }
+    }
+
+    internal class CharacterLooks
+    {
+        [JsonProperty("color")]
+        public int Color { get; set; }
+
+        [JsonProperty("accessory")]
+        public int Accessory { get; set; }
+
+        [JsonProperty("eye")]
+        public int Eye { get; set; }
+
+        [JsonProperty("mouth")]
+        public int Mouth { get; set; }
+
+        [JsonProperty("hat")]
+        public int Hat { get; set; }
+
+        [JsonProperty("outfit")]
+        public int Outfit { get; set; }
+
+        public static CharacterLooks FromCustomizationData(CharacterCustomizationData data)
+        {
+            return new CharacterLooks()
+            {
+                Color = data.currentSkin,
+                Accessory = data.currentAccessory,
+                Eye = data.currentEyes,
+                Mouth = data.currentMouth,
+                Hat = data.currentHat,
+                Outfit = data.currentOutfit,
+            };
+        }
+    }
+
+    internal class Looks_DTO : ServerPayloadBase
+    {
+        [JsonProperty("looks")]
+        public CharacterLooks Looks { get; set; }
+
+        public override ServerPayloadBase GetTruncatedCopy(int TruncatedTicketLength = 16)
+        {
+            return new Looks_DTO()
+            {
+                Ticket = Ticket.Substring(0, TruncatedTicketLength),
+                Looks = Looks,
             };
         }
     }
@@ -78,6 +132,26 @@ internal class StatPeakServerUtil
         return url.ToString();
     }
 
+    private static void PostData(string url, ServerPayloadBase payload)
+    {
+        string stringifiedBody = JsonConvert.SerializeObject(payload);
+
+        new Thread(() =>
+        {
+            using HttpClient client = new HttpClient();
+            Plugin.Logger.LogDebug($"Request body: {JsonConvert.SerializeObject(payload.GetTruncatedCopy())}");
+            HttpContent content = new StringContent(stringifiedBody, Encoding.UTF8, "application/json");
+
+            Plugin.Logger.LogDebug($"Sending stats to {url}");
+            var response = client.PostAsync(url, content).Result;
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Plugin.Logger.LogError($"Failed to post stats: {response.StatusCode}");
+            }
+        }).Start();
+    }
+
     public static void SendStats(Dictionary<string, double> stats)
     {
         Stats_DTO dto = new Stats_DTO()
@@ -87,24 +161,19 @@ internal class StatPeakServerUtil
         };
 
         string requestUrl = CreateRequestUrl("stats");
-        string stringifiedBody = JsonConvert.SerializeObject(dto);
+        PostData(requestUrl, dto);
+    }
 
-        new Thread(() =>
+    public static void SendLooks(CharacterLooks looks)
+    {
+        Looks_DTO dto = new Looks_DTO()
         {
-            using (HttpClient client = new HttpClient())
-            {
-                Plugin.Logger.LogDebug($"Request body: {JsonConvert.SerializeObject(dto.GetTruncatedCopy())}");
-                HttpContent content = new StringContent(stringifiedBody, Encoding.UTF8, "application/json");
+            Ticket = SteamUtil.GetSessionTicket(),
+            Looks = looks,
+        };
 
-                Plugin.Logger.LogDebug($"Sending stats to {requestUrl}");
-                var response = client.PostAsync(requestUrl, content).Result;
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    Plugin.Logger.LogError($"Failed to post stats: {response.StatusCode}");
-                }
-            }
-        }).Start();
+        string requestUrl = CreateRequestUrl("looks");
+        PostData(requestUrl, dto);
     }
 }
 
