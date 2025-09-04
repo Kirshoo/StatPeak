@@ -4,6 +4,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using HarmonyLib;
+using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -115,6 +116,11 @@ public partial class Plugin : BaseUnityPlugin
     {
         public readonly static string AIRPORT_SCENE = "Airport";
 
+        private static bool IsInAirport()
+        {
+            return SceneManager.GetActiveScene().name != AIRPORT_SCENE;
+        }
+
         private static void ResetStatistics()
         {
             Plugin.Logger.LogDebug("Resetting all accumulated statistics...");
@@ -127,11 +133,32 @@ public partial class Plugin : BaseUnityPlugin
             StatPeakServerUtil.SendStats(PlayerStats.GetAll());
         }
 
+        private static CharacterCustomizationData GetCharacterLooks()
+        {
+            return CharacterCustomization.GetCustomizationData(PhotonNetwork.LocalPlayer);
+        }
+
+        private static void SendCharacterCustomizations()
+        {
+            CharacterCustomizationData data = GetCharacterLooks();
+
+            Plugin.Logger.LogDebug("Sending current character customizations to remote server...");
+            StatPeakServerUtil.SendLooks(StatPeakServerUtil.CharacterLooks.FromCustomizationData(data));
+        }
+
         [HarmonyPatch(typeof(RunManager), nameof(RunManager.StartRun))]
         [HarmonyPostfix]
         public static void OnRunStart()
         {
             ResetStatistics();
+
+            if (IsInAirport())
+            {
+                Plugin.Logger.LogDebug("Player is in airport, no customization data will be sent");
+                return;
+            }
+
+            SendCharacterCustomizations();
         }
 
         [HarmonyPatch(typeof(RunManager), nameof(RunManager.EndGame))]
@@ -159,7 +186,7 @@ public partial class Plugin : BaseUnityPlugin
             // If not, something far worse is happening
 
             // Dont send stats when in airport
-            if (SceneManager.GetActiveScene().name == AIRPORT_SCENE)
+            if (IsInAirport())
             {
                 Plugin.Logger.LogDebug("Player quit in airport, no data will be sent");
                 return;
