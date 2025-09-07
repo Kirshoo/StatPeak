@@ -7,6 +7,7 @@ using HarmonyLib;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Zorro.Core;
 
 namespace StatPeak;
 
@@ -59,6 +60,8 @@ public partial class Plugin : BaseUnityPlugin
 
         _harmony.PatchAll(typeof(Plugin.PlayerActionPatch));
         _harmony.PatchAll(typeof(Plugin.RunPatch));
+        _harmony.PatchAll(typeof(Plugin.RopePatches));
+        _harmony.PatchAll(typeof(Plugin.ChainPatches));
         Logger.LogInfo($"All run specific patches applied successfully");
 
         _harmony.PatchAll(typeof(Plugin.InitializationPatch));
@@ -493,6 +496,161 @@ public partial class Plugin : BaseUnityPlugin
             // will increment this stat
             Plugin.Logger.LogDebug($"Local player consumed {item.GetName()}, incrementing '{item.GetName()}'...");
             PlayerStats.Increment(item.GetName());
+        }
+    }
+
+    public class ChainPatches
+    {
+        internal const int DefaultAmountOfSamples = 50;
+
+        public class ChainStatContext
+        {
+            [ThreadStatic]
+            public static VineShooter? shooterInstance;
+        }
+
+        [HarmonyPatch(typeof(VineShooter), nameof(VineShooter.OnPrimaryFinishedCast))]
+        [HarmonyPrefix]
+        public static void SetShooterInstance(VineShooter __instance)
+        {
+            if (!__instance.photonView.IsMine) { return; }
+
+            ChainStatContext.shooterInstance = __instance;
+        }
+
+        [HarmonyPatch(typeof(VineShooter), nameof(VineShooter.OnPrimaryFinishedCast))]
+        [HarmonyPostfix]
+        public static void DisposeShooterInstance()
+        {
+            ChainStatContext.shooterInstance = null;
+        }
+
+        private static float CalculateArcLength(Vector3 from, Vector3 mid, Vector3 to, int samples = DefaultAmountOfSamples)
+        {
+            float length = 0f;
+            Vector3 previous = from;
+
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / (samples - 1);
+                Vector3 point = BezierCurve.QuadraticBezier(from, mid, to, t);
+                length += Vector3.Distance(previous, point);
+                previous = point;
+            }
+
+            return length;
+        }
+
+        [HarmonyPatch(typeof(JungleVine), nameof(JungleVine.CheckVinePath))]
+        [HarmonyPostfix]
+        public static void IncrementVineLength(bool __result, Vector3 from, Vector3 to, Vector3 mid)
+        {
+            // Vine is not valid or chain launcher never shot
+            if (!__result || ChainStatContext.shooterInstance == null)
+            {
+                return;
+            }
+
+            // Debug output to compare with results of original function
+            // Plugin.Logger.LogDebug($"from: {from}, to: {to}, mid: {mid}, hang: {Vector3.Distance(Vector3.Lerp(from, to, 0.5f), mid)}");
+
+            float valueToAdd = CalculateArcLength(from, to, mid);
+            float distanceInMeters = valueToAdd * CharacterStats.unitsToMeters;
+
+            Plugin.Logger.LogDebug($"Incrementing '{Stat.ChainPlaced}' by {distanceInMeters}m");
+            PlayerStats.Increment(Stat.ChainPlaced, distanceInMeters);
+        }
+    }
+
+    public class RopePatches
+    {
+
+        #region Rope Cannon stat tracking
+
+        // In short, this is a mess and i wonder if there is a better way to track this statistic
+
+        public class RopeStatContext
+        {
+            [ThreadStatic]
+            public static RopeShooter? ropeShooter;
+
+            [ThreadStatic]
+            public static bool ropeShooterShot;
+        }
+
+        private static void IncrementRopePlacedLength(float amount, bool isAntiRope)
+        {
+            string StatToIncrement = isAntiRope ? Stat.AntiropePlaced : Stat.RopePlaced;
+
+            Plugin.Logger.LogDebug($"Incrementing '{StatToIncrement}' by {amount}");
+            PlayerStats.Increment(StatToIncrement, amount);
+        }
+
+        [HarmonyPatch(typeof(AchievementManager), nameof(AchievementManager.AddToRunBasedFloat))]
+        [HarmonyPrefix]
+        public static void SetSuccessfulShot(RUNBASEDVALUETYPE type)
+        {
+            if (RopeStatContext.ropeShooter == null || type != RUNBASEDVALUETYPE.RopePlaced)
+            {
+                return;
+            }
+
+            RopeStatContext.ropeShooterShot = true;
+        }
+
+        [HarmonyPatch(typeof(RopeShooter), nameof(RopeShooter.OnPrimaryFinishedCast))]
+        [HarmonyPrefix]
+        public static void InitiateRopeShooterShot(RopeShooter __instance)
+        {
+            // Ignore non-local player rope shooters
+            if (!__instance.photonView.IsMine)
+            {
+                Plugin.Logger.LogDebug("Someone else shot the rope cannon!");
+                return;
+            }
+
+            RopeStatContext.ropeShooter = __instance;
+        }
+
+        [HarmonyPatch(typeof(RopeShooter), nameof(RopeShooter.OnPrimaryFinishedCast))]
+        [HarmonyPostfix]
+        public static void DisposeOfInstanceReference()
+        {
+            RopeStatContext.ropeShooter = null;
+        }
+
+        // Because SpawnRope is called via RPC, we cannot dispose of ropeShooter after its being shot.
+        // This is a workaround for the time being.
+        [HarmonyPatch(typeof(RopeAnchorWithRope), nameof(RopeAnchorWithRope.SpawnRope))]
+        [HarmonyPostfix]
+        public static void SpawnedRope(RopeAnchorWithRope __instance, Rope __result)
+        {
+            // Make sure we dont assign instance of stray ropes that lay on the map
+            if (!RopeStatContext.ropeShooterShot)
+            {
+                Plugin.Logger.LogDebug("Spawning the rope before rope shooter was instantiated.");
+                return;
+            }
+
+            IncrementRopePlacedLength(Rope.GetLengthInMeters(__instance.ropeSegmentLength), __result.antigrav);
+            RopeStatContext.ropeShooterShot = false;
+        }
+
+        #endregion
+
+        // Called by both Rope Cannon and Rope Spool.
+        // Unlike Rope Spool, Rope Cannon calls with length 0f.
+        // It could be explained by RopeAnchorWithRope.SpawnRope.SpoolOut, which changes length of segements (from 0f to 20f over period of time)
+        [HarmonyPatch(typeof(Rope), nameof(Rope.AttachToAnchor_Rpc))]
+        [HarmonyPostfix]
+        public static void IncrementRopeSpoolPlaced(Rope __instance)
+        {
+            if (!__instance.view.IsMine) {
+                Plugin.Logger.LogDebug("Non-local player's spool was placed.");
+                return;
+            }
+
+            IncrementRopePlacedLength(__instance.GetLengthInMeters(), __instance.antigrav);
         }
     }
 }
