@@ -11,23 +11,27 @@ using UnityEngine.SceneManagement;
 namespace StatPeak;
 
 
-public static class Stat
+public class Stat
 {
-    public readonly static string TotalDeaths = "Died this run";
-    public readonly static string TotalFaints = "Passed out this run";
-    public readonly static string TotalRevives = "Been revived this run";
-    public readonly static string TotalJumps = "Jumped this run";
-    public readonly static string LuggagesOpened = "Luggages opened by you";
-    public readonly static string ItemsThrown = "Items thrown by you";
-    public readonly static string ItemsGrabbed = "Items picked up by you";
-    public readonly static string ItemsCooked = "Items cooked by you";
+    public const string TotalDeaths = "Died this run";
+    public const string TotalFaints = "Passed out this run";
+    public const string TotalRevives = "Been revived this run";
+    public const string TotalJumps = "Jumped this run";
+    public const string LuggagesOpened = "Luggages opened by you";
+    public const string ItemsThrown = "Items thrown by you";
+    public const string ItemsGrabbed = "Items picked up by you";
+    public const string ItemsCooked = "Items cooked by you";
 
-    public readonly static string DistanceWalked = "Distance traveled (in m)";
-    public readonly static string DistanceClimbed = "Distance climbed (in m)";
-    public readonly static string DistanceClimbedOnVines = "Distance traveled on vines (in m)";
-    public readonly static string DistanceClimbedOnRopes = "Distance climbed on the rope (in m)";
-    public readonly static string DistanceWhileAirborne = "Distance while airborne (in m)";
-    public readonly static string GreatestContinuousClimb = "Greatest Continuous Climb (in m)";
+    public const string DistanceWalked = "Distance traveled (in m)";
+    public const string DistanceClimbed = "Distance climbed (in m)";
+    public const string DistanceClimbedOnVines = "Distance traveled on vines (in m)";
+    public const string DistanceClimbedOnRopes = "Distance climbed on the rope (in m)";
+    public const string DistanceWhileAirborne = "Distance while airborne (in m)";
+    public const string GreatestContinuousClimb = "Greatest Continuous Climb (in m)";
+
+    public const string RopePlaced = "Rope placed (in m)";
+    public const string AntiropePlaced = "Antirope placed (in m)";
+    public const string ChainPlaced = "Chain length placed (in m)";
 }
 
 [BepInAutoPlugin]
@@ -112,13 +116,15 @@ public partial class Plugin : BaseUnityPlugin
         }
     }
 
+    #region Communication with Remote server
+
     public class RunPatch
     {
         public readonly static string AIRPORT_SCENE = "Airport";
 
         private static bool IsInAirport()
         {
-            return SceneManager.GetActiveScene().name != AIRPORT_SCENE;
+            return SceneManager.GetActiveScene().name == AIRPORT_SCENE;
         }
 
         private static void ResetStatistics()
@@ -196,6 +202,8 @@ public partial class Plugin : BaseUnityPlugin
         }
     }
 
+    #endregion
+
     public class AfflictionPatch
     {
         private static CharacterAfflictions.STATUSTYPE lastAffliction = CharacterAfflictions.STATUSTYPE.Hunger;
@@ -236,6 +244,8 @@ public partial class Plugin : BaseUnityPlugin
             }
         }
     }
+
+    #region Player state stat tracking
 
     public class PlayerStatePatch
     {
@@ -297,6 +307,8 @@ public partial class Plugin : BaseUnityPlugin
             PlayerStats.Increment(Stat.TotalJumps);
         }
     }
+
+    #endregion
 
     public class PlayerMovementPatch
     {
@@ -368,6 +380,8 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
+            // Using if statements to track different movement types within one patch.
+            // This ensures that exactly one stat is incremeneted at the same time.
             if (__instance.character.data.isGrounded)
             {
                 IncrementDistanceTraveled(currentPosition, PlayerMovementPatch.PreviousPosition);

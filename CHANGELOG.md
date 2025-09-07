@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Tracking of current outfit of the character
+- Tracking of length of placed ropes during the run
+- Tracking length of chains paths created/placed
 
 ## [0.5.0]
 
