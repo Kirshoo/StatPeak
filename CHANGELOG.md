@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tracking duration and times bugles have been used
 - Tracking of various item uses
 
+### Changed
+
+- Put most of stat based patches into a separate namespace: StatPeak.Patches
+
 ## [0.6.0]
 
 ### Added

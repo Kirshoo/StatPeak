@@ -1,5 +1,4 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -7,7 +6,7 @@ using HarmonyLib;
 using Photon.Pun;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Zorro.Core;
+using StatPeak.Patches;
 
 namespace StatPeak;
 
@@ -180,21 +179,7 @@ public partial class Plugin : BaseUnityPlugin
         Logger = base.Logger;
         Logger.LogInfo($"Plugin {Name} is loaded!");
 
-        _harmony.PatchAll(typeof(Plugin.AfflictionPatch));
-        Logger.LogInfo($"All affliction patches applied successfully.");
-
-        _harmony.PatchAll(typeof(Plugin.PlayerStatePatch));
-        _harmony.PatchAll(typeof(Plugin.PlayerMovementPatch));
-        Logger.LogInfo($"All player state patches applied successfully");
-
-        _harmony.PatchAll(typeof(Plugin.PlayerActionPatch));
-        _harmony.PatchAll(typeof(Plugin.RunPatch));
-        _harmony.PatchAll(typeof(Plugin.RopePatches));
-        _harmony.PatchAll(typeof(Plugin.ChainPatches));
-        Logger.LogInfo($"All run specific patches applied successfully");
-
-        _harmony.PatchAll(typeof(Plugin.InitializationPatch));
-        Logger.LogInfo($"All initialization patches applied successfully");
+        PatchAll();
 
         RemoteServerBaseURL = Config.Bind(
             "RemoteServer",
@@ -216,6 +201,25 @@ public partial class Plugin : BaseUnityPlugin
             true,
             "Toggle to specify whether server communicates with HTTP or HTTPS protocol. 'true' signifies HTTPS, 'false' - HTTP"
         );
+    }
+
+    private void PatchAll()
+    {
+        _harmony.PatchAll(typeof(AfflictionPatch));
+        Logger.LogInfo($"All affliction patches applied successfully.");
+
+        _harmony.PatchAll(typeof(PlayerStatePatch));
+        _harmony.PatchAll(typeof(PlayerMovementPatch));
+        Logger.LogInfo($"All player state patches applied successfully");
+
+        _harmony.PatchAll(typeof(PlayerActionPatch));
+        _harmony.PatchAll(typeof(Plugin.RunPatch));
+        _harmony.PatchAll(typeof(RopePatch));
+        _harmony.PatchAll(typeof(ChainPatch));
+        Logger.LogInfo($"All run specific patches applied successfully");
+
+        _harmony.PatchAll(typeof(Plugin.InitializationPatch));
+        Logger.LogInfo($"All initialization patches applied successfully");
     }
 
     private void Update()
@@ -247,8 +251,6 @@ public partial class Plugin : BaseUnityPlugin
             SteamUtil.Init();
         }
     }
-
-    #region Communication with Remote server
 
     public class RunPatch
     {
@@ -331,517 +333,6 @@ public partial class Plugin : BaseUnityPlugin
             }
 
             SendRunStatistics();
-        }
-    }
-
-    #endregion
-
-    public class AfflictionPatch
-    {
-        private static CharacterAfflictions.STATUSTYPE lastAffliction = CharacterAfflictions.STATUSTYPE.Hunger;
-        private static float AccumulatedAmount = 0;
-        private static DateTime lastLogTime = DateTime.MinValue;
-
-        [HarmonyPatch(typeof(CharacterAfflictions), nameof(CharacterAfflictions.AddStatus))]
-        [HarmonyPostfix]
-        public static void IncrementStatus(CharacterAfflictions __instance, bool __result, CharacterAfflictions.STATUSTYPE statusType, float amount)
-        {
-            if (!__result)
-            {
-                // Ignore calls to AddStatus if they didn't add status to character
-                return;
-            }
-
-            if (!__instance.character.IsLocal)
-            {
-                // Ignore calls that are not about local player
-                return;
-            }
-
-            // Add before reseting to not lose information about last amount
-            AccumulatedAmount += amount;
-            PlayerStats.Increment(statusType.ToString(), amount);
-
-            if (lastAffliction != statusType || DateTime.Now > lastLogTime.AddMinutes(1))
-            {
-                // Only log when new affliction type has called AddStatus
-                // or when you are accumulating for more than 1 minute
-                //
-                // Otherwise, will flood console with lots of "Added X.XXXXXX of hunger"
-                Plugin.Logger.LogDebug($"Adding {AccumulatedAmount} of {lastAffliction}");
-
-                lastLogTime = DateTime.Now;
-                AccumulatedAmount = 0;
-                lastAffliction = statusType;
-            }
-        }
-    }
-
-    #region Player state stat tracking
-
-    public class PlayerStatePatch
-    {
-        [ThreadStatic]
-        private static bool EndGameStatusTracked = false;
-
-        [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Die))]
-        // Has to be Prefix because it calls RunManager.Instance.EndGame, which sends all the stats to server
-        // and information about death is lost since it runs AFTER the data is sent.
-        [HarmonyPrefix]
-        public static void IncrementDeaths(Character __instance)
-        {
-            if (!__instance.IsLocal)
-            {
-                // Ignore calls that are not about local player
-                return;
-            }
-
-            Plugin.Logger.LogDebug($"Local player died, incrementing '{Stat.TotalDeaths}'");
-            PlayerStats.Increment(Stat.TotalDeaths);
-        }
-
-        [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Revive))]
-        [HarmonyPostfix]
-        public static void IncrementRevives(Character __instance)
-        {
-            if (!__instance.IsLocal)
-            {
-                // Ignore calls that are not about local player
-                return;
-            }
-
-            Plugin.Logger.LogDebug($"Local player revived, incrementing '{Stat.TotalRevives}'");
-            PlayerStats.Increment(Stat.TotalRevives);
-        }
-
-        [HarmonyPatch(typeof(Character), nameof(Character.RPCA_PassOut))]
-        [HarmonyPostfix]
-        public static void IncrementFaints(Character __instance)
-        {
-            if (!__instance.IsLocal)
-            {
-                // Ignore calls that are not about local player
-                return;
-            }
-
-            Plugin.Logger.LogDebug($"Local player passed out, incrementing '{Stat.TotalFaints}'");
-            PlayerStats.Increment(Stat.TotalFaints);
-        }
-
-        [HarmonyPatch(typeof(Character), nameof(Character.OnJump))]
-        [HarmonyPostfix]
-        public static void IncrementJumps(Character __instance)
-        {
-            if (!__instance.IsLocal)
-            {
-                // Ignore calls that are not about local player
-                return;
-            }
-
-            Plugin.Logger.LogDebug($"Local player jumped, incrementing '{Stat.TotalJumps}'");
-            PlayerStats.Increment(Stat.TotalJumps);
-        }
-
-        [HarmonyPatch(typeof(RunManager), nameof(RunManager.StartRun))]
-        [HarmonyPostfix]
-        public static void OnRunStart()
-        {
-            EndGameStatusTracked = false;
-        }
-
-        [HarmonyPatch(typeof(Character), nameof(Character.CheckWinCondition))]
-        [HarmonyPrefix]
-        public static void IncrementEndGameStatus(bool __result, Character c)
-        {
-            if (!c.IsLocal || EndGameStatusTracked) { return; }
-
-            string statToIncrement = __result ? Stat.HasEscaped : Stat.HasFailed;
-            PlayerStats.Increment(statToIncrement);
-
-            EndGameStatusTracked = true;
-        }
-    }
-
-    #endregion
-
-    public class PlayerMovementPatch
-    {
-        private static Vector3 PreviousPosition = Vector3.zero;
-
-        private static void IncrementWithoutY(string statName, Vector3 updatedPosition, Vector3 previousPosition)
-        {
-            var tempY = updatedPosition.y;
-            var tempPrevY = previousPosition.y;
-
-            updatedPosition.y = 0f;
-            previousPosition.y = 0f;
-            
-            var distance = Vector3.Distance(updatedPosition, previousPosition);
-            // Because position uses units rather than meters, we need to convert before incrementing
-            var distanceInMeters = distance * CharacterStats.unitsToMeters;
-
-            PlayerStats.Increment(statName, distanceInMeters);
-
-            updatedPosition.y = tempY;
-            previousPosition.y = tempPrevY;
-        }
-
-        private static void IncrementOnlyWithY(string statName, Vector3 updatedPosition, Vector3 previousPosition)
-        {
-            var distance = Math.Sqrt(Math.Pow(updatedPosition.y - previousPosition.y, 2));
-            // Because position uses units rather than meters, we need to convert before incrementing
-            var distanceInMeters = distance * CharacterStats.unitsToMeters;
-
-            PlayerStats.Increment(statName, distanceInMeters);
-        }
-
-        private static void IncrementDistanceTraveled(Vector3 currentPosition, Vector3 previousPosition)
-        {
-            IncrementWithoutY(Stat.DistanceWalked, currentPosition, previousPosition);
-        }
-
-        private static void IncrementDistanceClimbed(Vector3 currentPosition, Vector3 previousPosition)
-        {
-            IncrementOnlyWithY(Stat.DistanceClimbed, currentPosition, previousPosition);
-        }
-
-        private static void IncrementDistanceVineClimbed(Vector3 currentPosition, Vector3 previousPosition)
-        {
-            IncrementWithoutY(Stat.DistanceClimbedOnVines, currentPosition, previousPosition);
-        }
-
-        private static void IncrementDistanceInAir(Vector3 currentPosition, Vector3 previousPosition)
-        {
-            IncrementOnlyWithY(Stat.DistanceWhileAirborne, currentPosition, previousPosition);
-        }
-
-        private static void IncrementDistanceRopeClimbed(Vector3 currentPosition, Vector3 previousPosition)
-        {
-            IncrementOnlyWithY(Stat.DistanceClimbedOnRopes, currentPosition, previousPosition);
-        }
-
-        [HarmonyPatch(typeof(CharacterMovement), nameof(CharacterMovement.FixedUpdate))]
-        [HarmonyPostfix]
-        public static void IncrementCharacterMovement(CharacterMovement __instance)
-        {
-            if (!__instance.character.IsLocal) return;
-
-            Vector3 currentPosition = __instance.character.Center;
-
-            if (PlayerMovementPatch.PreviousPosition == Vector3.zero)
-            {
-                PlayerMovementPatch.PreviousPosition = currentPosition;
-                return;
-            }
-
-            // Using if statements to track different movement types within one patch.
-            // This ensures that exactly one stat is incremeneted at the same time.
-            if (__instance.character.data.isGrounded)
-            {
-                IncrementDistanceTraveled(currentPosition, PlayerMovementPatch.PreviousPosition);
-            }
-            else if (__instance.character.data.isClimbing)
-            {
-                IncrementDistanceClimbed(currentPosition, PlayerMovementPatch.PreviousPosition);
-            }
-            else if (__instance.character.data.isVineClimbing)
-            {
-                IncrementDistanceVineClimbed(currentPosition, PlayerMovementPatch.PreviousPosition);
-            }
-            else if (__instance.character.data.isRopeClimbing)
-            {
-                IncrementDistanceRopeClimbed(currentPosition, PlayerMovementPatch.PreviousPosition);
-            }
-            else if (!__instance.character.data.isGrounded && !__instance.character.data.isClimbingAnything)
-            {
-                IncrementDistanceInAir(currentPosition, PlayerMovementPatch.PreviousPosition);
-            }
-
-            PreviousPosition = currentPosition;
-        }
-
-        [HarmonyPatch(typeof(Character), nameof(Character.UpdateVariablesFixed))]
-        [HarmonyPostfix]
-        public static void IncrementCharacterGreatestContinuousClimb(Character __instance)
-        {
-            if (!__instance.IsLocal) { return; }
-
-            if (!__instance.data.isClimbing) { return; }
-
-            if (__instance.data.sinceGrounded > __instance.data.sinceClimb + 1f)
-            {
-                // This is a debug to show when endurance achivement can be thrown
-                Plugin.Logger.LogDebug($"[GreatestContinuousClimb] {{ SinceGrounded: {__instance.data.sinceGrounded} }} > {{ SinceClimb + 1f: {__instance.data.sinceClimb + 1f} }}");
-            }
-
-            var currentClimb = __instance.Center.y - __instance.data.lastGroundedHeight;
-            var currentClimbInMeters = currentClimb * CharacterStats.unitsToMeters;
-
-            PlayerStats.Set(
-                Stat.GreatestContinuousClimb,
-                // Only record the biggest of the two!
-                Mathf.Max((float)PlayerStats.Get(Stat.GreatestContinuousClimb), currentClimbInMeters)
-            );
-        }
-    }
-
-    public class PlayerActionPatch
-    {
-        [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerLuggageOpened))]
-        [HarmonyPostfix]
-        public static void IncrementOpenedLuggages(Character character)
-        {
-            if (!character.IsLocal)
-            {
-                // Ignore calls that are not about local player
-                return;
-            }
-
-            Plugin.Logger.LogDebug($"Local player opened luggage, incrementing 'luggages'");
-            PlayerStats.Increment(Stat.LuggagesOpened);
-        }
-
-        [HarmonyPatch(typeof(Item), nameof(Item.RPC_SetThrownData))]
-        [HarmonyPostfix]
-        public static void IncrementItemsThrown(Item __instance, int characterID)
-        {
-            if (!Character.GetCharacterWithPhotonID(characterID, out Character throwCharacter))
-            {
-                Plugin.Logger.LogError($"Cannot find view by viewID {characterID}");
-                return;
-            }
-
-            if (!throwCharacter.IsLocal) return;
-
-            Plugin.Logger.LogDebug($"Local player got rid of {__instance.GetItemName()}, incrementing 'items_thrown'...");
-            PlayerStats.Increment(Stat.ItemsThrown);
-        }
-
-        [HarmonyPatch(typeof(CharacterItems), nameof(CharacterItems.OnPickupAccepted))]
-        [HarmonyPostfix]
-        public static void IncrementItemsPickedUp(CharacterItems __instance)
-        {
-            if (!__instance.character.IsLocal) return;
-
-            Plugin.Logger.LogDebug($"Local player picked up an item, incrementing 'items_grabbed'...");
-            PlayerStats.Increment(Stat.ItemsGrabbed);
-        }
-
-        [HarmonyPatch(typeof(ItemCooking), nameof(ItemCooking.FinishCooking))]
-        [HarmonyPostfix]
-        public static void IncrementItemsCooked(ItemCooking __instance)
-        {
-            if (!__instance.item.holderCharacter.IsLocal) return;
-
-            Plugin.Logger.LogDebug($"Local player cooked {__instance.item.GetItemName()}, incrementing 'items_cooked'...");
-            PlayerStats.Increment(Stat.ItemsCooked);
-        }
-
-        [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerItemConsumed))]
-        [HarmonyPostfix]
-        public static void IncrementEatenItem(Item item, Character character)
-        {
-            if (!character.IsLocal) return;
-
-            Plugin.Logger.LogDebug($"Local player consumed {item.GetName()}, incrementing '{LocalizedText.GetNameIndex(item.UIData.itemName)}'...");
-            PlayerStats.Increment(LocalizedText.GetNameIndex(item.UIData.itemName).ToUpperInvariant());
-        }
-
-        [HarmonyPatch(typeof(Bugfix), nameof(Bugfix.Interact))]
-        [HarmonyPostfix]
-        public static void IncrementTicksPicked(Character interactor)
-        {
-            if (!interactor.IsLocal)
-            {
-                return;
-            }
-
-            Plugin.Logger.LogDebug($"Local player removed tick! Incrementing '{Stat.TicksRemoved}'...");
-            PlayerStats.Increment(Stat.TicksRemoved);
-        }
-
-        [HarmonyPatch(typeof(Campfire), nameof(Campfire.Interact_CastFinished))]
-        [HarmonyPostfix]
-        public static void IncrementCampfiresLit(Campfire __instance, Character interactor)
-        {
-            if (__instance.Lit || !__instance.EveryoneInRange(out _))
-            {
-                return;
-            }
-
-            if (!interactor.IsLocal)
-            {
-                return;
-            }
-
-            Plugin.Logger.LogDebug($"Local player lit the campfire! Incrementing '{Stat.CampfiresLit}'...");
-            PlayerStats.Increment(Stat.CampfiresLit);
-        }
-    }
-
-    public class ChainPatches
-    {
-        internal const int DefaultAmountOfSamples = 50;
-
-        public class ChainStatContext
-        {
-            [ThreadStatic]
-            public static VineShooter? shooterInstance;
-        }
-
-        [HarmonyPatch(typeof(VineShooter), nameof(VineShooter.OnPrimaryFinishedCast))]
-        [HarmonyPrefix]
-        public static void SetShooterInstance(VineShooter __instance)
-        {
-            if (!__instance.photonView.IsMine) { return; }
-
-            ChainStatContext.shooterInstance = __instance;
-        }
-
-        [HarmonyPatch(typeof(VineShooter), nameof(VineShooter.OnPrimaryFinishedCast))]
-        [HarmonyPostfix]
-        public static void DisposeShooterInstance()
-        {
-            ChainStatContext.shooterInstance = null;
-        }
-
-        private static float CalculateArcLength(Vector3 from, Vector3 mid, Vector3 to, int samples = DefaultAmountOfSamples)
-        {
-            float length = 0f;
-            Vector3 previous = from;
-
-            for (int i = 0; i < samples; i++)
-            {
-                float t = (float)i / (samples - 1);
-                Vector3 point = BezierCurve.QuadraticBezier(from, mid, to, t);
-                length += Vector3.Distance(previous, point);
-                previous = point;
-            }
-
-            return length;
-        }
-
-        [HarmonyPatch(typeof(JungleVine), nameof(JungleVine.CheckVinePath))]
-        [HarmonyPostfix]
-        public static void IncrementVineLength(bool __result, Vector3 from, Vector3 to, Vector3 mid)
-        {
-            // Vine is not valid or chain launcher never shot
-            if (!__result || ChainStatContext.shooterInstance == null)
-            {
-                return;
-            }
-
-            // Debug output to compare with results of original function
-            // Plugin.Logger.LogDebug($"from: {from}, to: {to}, mid: {mid}, hang: {Vector3.Distance(Vector3.Lerp(from, to, 0.5f), mid)}");
-
-            float valueToAdd = CalculateArcLength(from, to, mid);
-            float distanceInMeters = valueToAdd * CharacterStats.unitsToMeters;
-
-            Plugin.Logger.LogDebug($"Incrementing '{Stat.ChainPlaced}' by {distanceInMeters}m");
-            PlayerStats.Increment(Stat.ChainPlaced, distanceInMeters);
-        }
-    }
-
-    public class RopePatches
-    {
-
-        #region Rope Cannon stat tracking
-
-        // In short, this is a mess and i wonder if there is a better way to track this statistic
-
-        public class RopeStatContext
-        {
-            [ThreadStatic]
-            public static RopeShooter? ropeShooter;
-
-            [ThreadStatic]
-            public static bool ropeShooterShot;
-        }
-
-        private static void IncrementRopePlacedLength(float amount, bool isAntiRope)
-        {
-            string StatToIncrement = isAntiRope ? Stat.AntiropePlaced : Stat.RopePlaced;
-
-            Plugin.Logger.LogDebug($"Incrementing '{StatToIncrement}' by {amount}");
-            PlayerStats.Increment(StatToIncrement, amount);
-        }
-
-        [HarmonyPatch(typeof(AchievementManager), nameof(AchievementManager.AddToRunBasedFloat))]
-        [HarmonyPrefix]
-        public static void SetSuccessfulShot(RUNBASEDVALUETYPE type)
-        {
-            if (RopeStatContext.ropeShooter == null || type != RUNBASEDVALUETYPE.RopePlaced)
-            {
-                return;
-            }
-
-            RopeStatContext.ropeShooterShot = true;
-        }
-
-        [HarmonyPatch(typeof(RopeShooter), nameof(RopeShooter.OnPrimaryFinishedCast))]
-        [HarmonyPrefix]
-        public static void InitiateRopeShooterShot(RopeShooter __instance)
-        {
-            // Ignore non-local player rope shooters
-            if (!__instance.photonView.IsMine)
-            {
-                Plugin.Logger.LogDebug("Someone else shot the rope cannon!");
-                return;
-            }
-
-            RopeStatContext.ropeShooter = __instance;
-        }
-
-        [HarmonyPatch(typeof(RopeShooter), nameof(RopeShooter.OnPrimaryFinishedCast))]
-        [HarmonyPostfix]
-        public static void DisposeOfInstanceReference()
-        {
-            RopeStatContext.ropeShooter = null;
-        }
-
-        // Because SpawnRope is called via RPC, we cannot dispose of ropeShooter after its being shot.
-        // This is a workaround for the time being.
-        [HarmonyPatch(typeof(RopeAnchorWithRope), nameof(RopeAnchorWithRope.SpawnRope))]
-        [HarmonyPostfix]
-        public static void SpawnedRope(RopeAnchorWithRope __instance, Rope __result)
-        {
-            // Make sure we dont assign instance of stray ropes that lay on the map
-            if (!RopeStatContext.ropeShooterShot)
-            {
-                Plugin.Logger.LogDebug("Spawning the rope before rope shooter was instantiated.");
-                return;
-            }
-
-            IncrementRopePlacedLength(Rope.GetLengthInMeters(__instance.ropeSegmentLength), __result.antigrav);
-            RopeStatContext.ropeShooterShot = false;
-        }
-
-        #endregion
-
-        // Called by both Rope Cannon and Rope Spool.
-        // Unlike Rope Spool, Rope Cannon calls with length 0f.
-        // It could be explained by RopeAnchorWithRope.SpawnRope.SpoolOut, which changes length of segements (from 0f to 20f over period of time)
-        [HarmonyPatch(typeof(Rope), nameof(Rope.AttachToAnchor_Rpc))]
-        [HarmonyPostfix]
-        public static void IncrementRopeSpoolPlaced(Rope __instance)
-        {
-            if (!__instance.view.IsMine) {
-                Plugin.Logger.LogDebug("Non-local player's spool was placed.");
-                return;
-            }
-
-            // Temporary check to avoid incrementing on rope cannon usage
-            if (RopeStatContext.ropeShooterShot)
-            {
-                Plugin.Logger.LogDebug("AttachToAnchor: Rope Spool placed by rope cannon shot. Ignoring...");
-                return;
-            }
-
-            IncrementRopePlacedLength(__instance.GetLengthInMeters(), __instance.antigrav);
-            
-            string RopePlaced = __instance.antigrav ? ItemName.AntiropeSpool : ItemName.RopeSpool;
-            Plugin.Logger.LogDebug($"Rope spool placed. Incrementing '{RopePlaced}'");
-            PlayerStats.Increment(RopePlaced);
         }
     }
 }
