@@ -9,9 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Tracking of distance frisbee has flown
+- Tracking duration and times bugles have been used
+- Tracking of various item uses
+
+## [0.6.0]
+
+### Added
+
 - Tracking of current outfit of the character
 - Tracking of length of placed ropes during the run
 - Tracking length of chains paths created/placed
+- Tracking of campfires lit by local player
+- Tracking for whether local player escaped the island or not
+- Tracking of amount of ticks removed (from self or from others)
+
+### Changed
+
+- Internal tracking of consumed items, to avoid issues with different languages
 
 ## [0.5.0]
 

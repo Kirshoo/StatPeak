@@ -18,10 +18,15 @@ public class Stat
     public const string TotalFaints = "Passed out this run";
     public const string TotalRevives = "Been revived this run";
     public const string TotalJumps = "Jumped this run";
+    public const string HasEscaped = "You have escaped";
+    public const string HasFailed = "You have failed to escaped";
+
     public const string LuggagesOpened = "Luggages opened by you";
     public const string ItemsThrown = "Items thrown by you";
     public const string ItemsGrabbed = "Items picked up by you";
     public const string ItemsCooked = "Items cooked by you";
+    public const string TicksRemoved = "Ticks removed by you";
+    public const string CampfiresLit = "Campfires lit by you";
 
     public const string DistanceWalked = "Distance traveled (in m)";
     public const string DistanceClimbed = "Distance climbed (in m)";
@@ -33,6 +38,130 @@ public class Stat
     public const string RopePlaced = "Rope placed (in m)";
     public const string AntiropePlaced = "Antirope placed (in m)";
     public const string ChainPlaced = "Chain length placed (in m)";
+}
+
+public class ItemName
+{
+    // Crispberries
+    public const string GreenCrispberry = "NAME_GREEN CRISPBERRY";
+    public const string RedCrispberry = "NAME_RED CRISPBERRY";
+    public const string YellowCrispberry = "NAME_YELLOW CRISPBERRY";
+
+    // Clusterberries
+    public const string BlackClusterberry = "NAME_BLACK CLUSTERBERRY";
+    public const string RedClusterberry = "NAME_RED CLUSTERBERRY";
+    public const string YellowClusterberry = "NAME_YELLOW CLUSTERBERRY";
+    public const string GreenClusterberry = "NAME_GREEN CLUSTERBERRY";
+
+    // Berrynanas
+    public const string BlueBerrynana = "NAME_BLUE BERRYNANA";
+    public const string BrownBerrynana = "NAME_BROWN BERRYNANA";
+    public const string PinkBerrynana = "NAME_PINK BERRYNANA";
+    public const string YellowBerrynana = "NAME_YELLOW BERRYNANA";
+    public const string BerrynanaPeel = "NAME_BERRYNANA PEEL";
+
+    // Kingberries
+    public const string GreenKingberry = "NAME_GREEN KINGBERRY";
+    public const string PurpleKingberry = "NAME_PURPLE KINGBERRY";
+    public const string YellowKingberry = "NAME_YELLOW KINGBERRY";
+
+    // Winterberries
+    public const string OrangeWinterberry = "NAME_ORANGE WINTERBERRY";
+    public const string YellowWinterberry = "NAME_YELLOW WINTERBERRY";
+
+    // Mushrooms
+    public const string ChubbyShroom = "NAME_CHUBBY SHROOM";
+    public const string ClusterShroom = "NAME_CLUSTER SHROOM";
+    public const string WeirdShroom = "NAME_WEIRD SHROOM";
+    public const string BugleShroom = "NAME_BUGLE SHROOM";
+    public const string ButtonShroom = "NAME_BUTTON SHROOM";
+
+    // Special mushrooms
+    public const string RemedyFungus = "NAME_REMEDY FUNGUS";
+    public const string ShelfFungus = "NAME_SHELF FUNGUS";
+    public const string BounceFungus = "NAME_BOUNCE FUNGUS";
+    public const string MagicBean = "NAME_MAGIC BEAN";
+
+    // Rope related
+    public const string ChainLauncher = "NAME_CHAIN LAUNCHER";
+    public const string RopeCannon = "NAME_ROPE CANNON";
+    public const string AntiropeCannon = "NAME_ANTI-ROPE CANNON";
+    public const string RopeSpool = "NAME_ROPE SPOOL";
+    public const string AntiropeSpool = "NAME_ANTI-ROPE SPOOL";
+
+    // Area specific items
+    public const string Beehive = "NAME_BEEHIVE";
+    public const string Honeycomb = "NAME_HONEYCOMB";
+    public const string Coconut = "NAME_COCONUT";
+    public const string CoconutHalf = "NAME_COCONUT HALF";
+    public const string Scorchberry = "NAME_SCORCHBERRY";
+
+    // Packaged food
+    public const string AirlineFood = "NAME_AIRLINE FOOD";
+    public const string EnergyDrink = "NAME_ENERGY DRINK";
+    public const string GranolaBar = "NAME_GRANOLA BAR";
+    public const string BigLollipop = "NAME_BIG LOLLIPOP";
+    public const string ScoutCookies = "NAME_SCOUT COOKIES";
+    public const string SportsDrink = "NAME_SPORTS DRINK";
+    public const string TrailMix = "NAME_TRAIL MIX";
+
+    // Mystical items
+    public const string CureAll = "NAME_CURE-ALL";
+    public const string PandorasLunchbox = "NAME_PANDORA'S LUNCHBOX";
+    public const string ScoutEffigy = "NAME_SCOUT EFFIGY";
+    public const string CursedSkull = "NAME_CURSED SKULL";
+
+    // Healing items
+    public const string Bandages = "NAME_BANDAGES";
+    public const string Antidote = "NAME_ANTIDOTE";
+    public const string MedicinalRoot = "NAME_MEDICINAL ROOT";
+    public const string FirstAidKit = "NAME_FIRST AID KIT";
+
+    // Misc. items
+    public const string Backpack = "NAME_BACKPACK";
+    public const string BingBong = "NAME_BING BONG";
+    public const string Binoculars = "NAME_BINOCULARS";
+    public const string Tick = "NAME_TICK";
+    public const string Bugle = "NAME_BUGLE";
+    public const string FriendshipBugle = "NAME_BUGLE OF FRIENDSHIP";
+    public const string ScoutMasterBugle = "NAME_SCOUTMASTER'S BUGLE";
+    public const string Piton = "NAME_PITON";
+    public const string Compass = "NAME_COMPASS";
+    public const string Egg = "NAME_EGG";
+    public const string Stick = "NAME_STICK";
+    public const string Flare = "NAME_FLARE";
+    public const string GuideBook = "NAME_GUIDEBOOK";
+    public const string TornPage = "NAME_TORN PAGE";
+    public const string Scroll = "NAME_SCROLL";
+    public const string Blowgun = "NAME_BLOWGUN";
+    public const string HeatPack = "NAME_HEAT PACK";
+    public const string Lantern = "NAME_LANTERN";
+    public const string FaerieLantern = "NAME_FAERIE LANTERN";
+    public const string Marshmallow = "NAME_MARSHMALLOW";
+    public const string Megaphone = "NAME_MEGAPHONE";
+    public const string Napberry = "NAME_NAPBERRY";
+    public const string BigEgg = "NAME_BIG EGG";
+    public const string Passport = "NAME_PASSPORT";
+    public const string PiratesCompass = "NAME_PIRATE'S COMPASS";
+    public const string PortableStove = "NAME_PORTABLE STOVE";
+    public const string Conch = "NAME_CONCH";
+    public const string Stone = "NAME_STONE";
+    public const string WarpCompass = "NAME_WARP COMPASS";
+    public const string FlyingDisc = "NAME_FLYING DISC";
+    public const string Parasol = "NAME_PARASOL";
+    public const string RedPrickleberry = "NAME_RED PRICKLEBERRY";
+    public const string GoldPrickleberry = "NAME_GOLD PRICKLEBERRY";
+    public const string Sunscreen = "NAME_SUNSCREEN";
+    public const string AloeVera = "NAME_ALOE VERA";
+    public const string Cactus = "NAME_CACTUS";
+    public const string Balloon = "NAME_BALLOON";
+    public const string ScoutCannon = "NAME_SCOUT CANNON";
+    public const string Torch = "NAME_TORCH";
+    public const string BalloonBunch = "NAME_BALLOON BUNCH";
+    public const string AncientIdol = "NAME_ANCIENT IDOL";
+    public const string Dynamite = "NAME_DYNAMITE";
+    public const string Scorpion = "NAME_SCORPION";
+    public const string Bird = "NAME_BIRD";
 }
 
 [BepInAutoPlugin]
@@ -252,6 +381,9 @@ public partial class Plugin : BaseUnityPlugin
 
     public class PlayerStatePatch
     {
+        [ThreadStatic]
+        private static bool EndGameStatusTracked = false;
+
         [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Die))]
         // Has to be Prefix because it calls RunManager.Instance.EndGame, which sends all the stats to server
         // and information about death is lost since it runs AFTER the data is sent.
@@ -264,7 +396,7 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player died, incrementing 'deaths'");
+            Plugin.Logger.LogDebug($"Local player died, incrementing '{Stat.TotalDeaths}'");
             PlayerStats.Increment(Stat.TotalDeaths);
         }
 
@@ -278,7 +410,7 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player revived, incrementing 'revives'");
+            Plugin.Logger.LogDebug($"Local player revived, incrementing '{Stat.TotalRevives}'");
             PlayerStats.Increment(Stat.TotalRevives);
         }
 
@@ -292,7 +424,7 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player passed out, incrementing 'faints'");
+            Plugin.Logger.LogDebug($"Local player passed out, incrementing '{Stat.TotalFaints}'");
             PlayerStats.Increment(Stat.TotalFaints);
         }
 
@@ -306,8 +438,27 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
-            Plugin.Logger.LogDebug($"Local player jumped, incrementing 'jumps'");
+            Plugin.Logger.LogDebug($"Local player jumped, incrementing '{Stat.TotalJumps}'");
             PlayerStats.Increment(Stat.TotalJumps);
+        }
+
+        [HarmonyPatch(typeof(RunManager), nameof(RunManager.StartRun))]
+        [HarmonyPostfix]
+        public static void OnRunStart()
+        {
+            EndGameStatusTracked = false;
+        }
+
+        [HarmonyPatch(typeof(Character), nameof(Character.CheckWinCondition))]
+        [HarmonyPrefix]
+        public static void IncrementEndGameStatus(bool __result, Character c)
+        {
+            if (!c.IsLocal || EndGameStatusTracked) { return; }
+
+            string statToIncrement = __result ? Stat.HasEscaped : Stat.HasFailed;
+            PlayerStats.Increment(statToIncrement);
+
+            EndGameStatusTracked = true;
         }
     }
 
@@ -492,10 +643,39 @@ public partial class Plugin : BaseUnityPlugin
         {
             if (!character.IsLocal) return;
 
-            // Using GetName() should ensure that any staged of cooked item with the same type
-            // will increment this stat
-            Plugin.Logger.LogDebug($"Local player consumed {item.GetName()}, incrementing '{item.GetName()}'...");
-            PlayerStats.Increment(item.GetName());
+            Plugin.Logger.LogDebug($"Local player consumed {item.GetName()}, incrementing '{LocalizedText.GetNameIndex(item.UIData.itemName)}'...");
+            PlayerStats.Increment(LocalizedText.GetNameIndex(item.UIData.itemName).ToUpperInvariant());
+        }
+
+        [HarmonyPatch(typeof(Bugfix), nameof(Bugfix.Interact))]
+        [HarmonyPostfix]
+        public static void IncrementTicksPicked(Character interactor)
+        {
+            if (!interactor.IsLocal)
+            {
+                return;
+            }
+
+            Plugin.Logger.LogDebug($"Local player removed tick! Incrementing '{Stat.TicksRemoved}'...");
+            PlayerStats.Increment(Stat.TicksRemoved);
+        }
+
+        [HarmonyPatch(typeof(Campfire), nameof(Campfire.Interact_CastFinished))]
+        [HarmonyPostfix]
+        public static void IncrementCampfiresLit(Campfire __instance, Character interactor)
+        {
+            if (__instance.Lit || !__instance.EveryoneInRange(out _))
+            {
+                return;
+            }
+
+            if (!interactor.IsLocal)
+            {
+                return;
+            }
+
+            Plugin.Logger.LogDebug($"Local player lit the campfire! Incrementing '{Stat.CampfiresLit}'...");
+            PlayerStats.Increment(Stat.CampfiresLit);
         }
     }
 
@@ -650,7 +830,18 @@ public partial class Plugin : BaseUnityPlugin
                 return;
             }
 
+            // Temporary check to avoid incrementing on rope cannon usage
+            if (RopeStatContext.ropeShooterShot)
+            {
+                Plugin.Logger.LogDebug("AttachToAnchor: Rope Spool placed by rope cannon shot. Ignoring...");
+                return;
+            }
+
             IncrementRopePlacedLength(__instance.GetLengthInMeters(), __instance.antigrav);
+            
+            string RopePlaced = __instance.antigrav ? ItemName.AntiropeSpool : ItemName.RopeSpool;
+            Plugin.Logger.LogDebug($"Rope spool placed. Incrementing '{RopePlaced}'");
+            PlayerStats.Increment(RopePlaced);
         }
     }
 }
