@@ -37,6 +37,14 @@ public class Stat
     public const string RopePlaced = "Rope placed (in m)";
     public const string AntiropePlaced = "Antirope placed (in m)";
     public const string ChainPlaced = "Chain length placed (in m)";
+
+    public const string FrisbeeDistanceFlown = "Distance frisbee has flown (in m)";
+    public const string FrisbeeGreatestThrow = "Greatest distance frisbee has flown and then caught (in m)";
+
+    public const string BugleTootDuration = "Bugle tooting time (in s)";
+    public const string MagicBugleTootDuration = "Friendship bugle tooting time (in s)";
+    public const string LanternLitDuration = "Time lantern was active (in s)";
+    public const string FairyLanternLitDuration = "Time fairy lantern was active (in s)";
 }
 
 public class ItemName
@@ -168,6 +176,7 @@ public partial class Plugin : BaseUnityPlugin
 {
     internal new static ManualLogSource Logger;
     private readonly Harmony _harmony = new(Id);
+
     private bool showStats = false;
 
     internal static ConfigEntry<string> RemoteServerBaseURL { get; private set; }
@@ -179,12 +188,10 @@ public partial class Plugin : BaseUnityPlugin
         Logger = base.Logger;
         Logger.LogInfo($"Plugin {Name} is loaded!");
 
-        PatchAll();
-
         RemoteServerBaseURL = Config.Bind(
             "RemoteServer",
             "BaseURL",
-            "api.hacktix.dev",
+            "api.ashiepaws.dev",
             "Base URL string of the remote server to which POST requests with stats will be sent to."
         );
 
@@ -201,6 +208,8 @@ public partial class Plugin : BaseUnityPlugin
             true,
             "Toggle to specify whether server communicates with HTTP or HTTPS protocol. 'true' signifies HTTPS, 'false' - HTTP"
         );
+
+        PatchAll();
     }
 
     private void PatchAll()
@@ -213,11 +222,13 @@ public partial class Plugin : BaseUnityPlugin
         Logger.LogInfo($"All player state patches applied successfully");
 
         _harmony.PatchAll(typeof(PlayerActionPatch));
-        _harmony.PatchAll(typeof(Plugin.RunPatch));
         _harmony.PatchAll(typeof(RopePatch));
         _harmony.PatchAll(typeof(ChainPatch));
-        Logger.LogInfo($"All run specific patches applied successfully");
+        _harmony.PatchAll(typeof(FrisbeePatch));
+        _harmony.PatchAll(typeof(ItemUsePatch));
+        Logger.LogInfo($"All character action patches applied successfully");
 
+        _harmony.PatchAll(typeof(Plugin.RunPatch));
         _harmony.PatchAll(typeof(Plugin.InitializationPatch));
         Logger.LogInfo($"All initialization patches applied successfully");
     }
@@ -237,7 +248,7 @@ public partial class Plugin : BaseUnityPlugin
         int i = 1;
         foreach (var entry in PlayerStats.GetAll())
         {
-            GUI.Label(new Rect(20, 20 * i, 300, 20), string.Format("{0}: {1}", entry.Key, entry.Value.ToString("F4", CultureInfo.InvariantCulture)));
+            GUI.Label(new Rect(20, 20 * i, 400, 20), string.Format("{0}: {1}", entry.Key, entry.Value.ToString("F4", CultureInfo.InvariantCulture)));
             i++;
         }
     }

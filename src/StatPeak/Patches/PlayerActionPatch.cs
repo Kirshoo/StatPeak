@@ -54,16 +54,6 @@ public class PlayerActionPatch
         PlayerStats.Increment(Stat.ItemsCooked);
     }
 
-    [HarmonyPatch(typeof(GlobalEvents), nameof(GlobalEvents.TriggerItemConsumed))]
-    [HarmonyPostfix]
-    public static void IncrementEatenItem(Item item, Character character)
-    {
-        if (!character.IsLocal) return;
-
-        Plugin.Logger.LogDebug($"Local player consumed {item.GetName()}, incrementing '{LocalizedText.GetNameIndex(item.UIData.itemName)}'...");
-        PlayerStats.Increment(LocalizedText.GetNameIndex(item.UIData.itemName).ToUpperInvariant());
-    }
-
     [HarmonyPatch(typeof(Bugfix), nameof(Bugfix.Interact))]
     [HarmonyPostfix]
     public static void IncrementTicksPicked(Character interactor)

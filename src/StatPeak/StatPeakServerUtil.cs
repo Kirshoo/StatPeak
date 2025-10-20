@@ -102,11 +102,17 @@ internal class StatPeakServerUtil
         { Stat.ChainPlaced, "placed_chain" },
         { Stat.AntiropePlaced, "placed_antirope" },
 
+        { Stat.LanternLitDuration, "duration_lantern" },
+        { Stat.FairyLanternLitDuration, "duration_fairylantern" },
+        { Stat.BugleTootDuration, "duration_bugle" },
+        { Stat.MagicBugleTootDuration, "duration_friendshipbugle" },
+
         { Stat.HasEscaped, "escaped" },
         { Stat.HasFailed, "failed" },
 
         { Stat.CampfiresLit, "campfires_lit" },
         { Stat.TicksRemoved, "ticks_removed" },
+        { Stat.FrisbeeDistanceFlown, "frisbee_distance" },
     };
 
     public static Dictionary<string, double> RemapKeys(Dictionary<string, double> map)
